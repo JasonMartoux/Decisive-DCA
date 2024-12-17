@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import { Metadata } from "next";
 import { ThirdwebProvider } from "thirdweb/react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import "./globals.css";
+import { ApolloWrapper } from "@/components/providers/ApolloWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
@@ -26,7 +27,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ThirdwebProvider>{children}</ThirdwebProvider>
+          <ThirdwebProvider>
+            <ApolloWrapper>
+                {children}
+            </ApolloWrapper>
+          </ThirdwebProvider>
         </ThemeProvider>
       </body>
     </html>

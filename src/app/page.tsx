@@ -1,26 +1,11 @@
-"use client";
-
+'use client';
 import Image from "next/image";
 import { ConnectButton } from "thirdweb/react";
 import thirdwebIcon from "@public/thirdweb.svg";
 import { client } from "./client";
-import { useEffect, useState } from "react";
+import { TokenProvider, useTokenContext } from "@/components/contexts/TokenContext";
 
 export default function Home() {
-  const [data, setData] = useState([null]);
-  const fetchData = async () => {
-    const response = await fetch(
-      `https://8453.insight.thirdweb.com/v1/events?limit=5&clientId=${process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}`
-    );
-    const data = await response.json();
-    setData(data.data);
-    console.log(data.data);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   return (
     <main className="p-4 pb-10 min-h-[100vh] flex items-center justify-center container max-w-screen-lg mx-auto">
       <div className="py-20">
@@ -36,9 +21,36 @@ export default function Home() {
           />
         </div>
 
-        <ThirdwebResources />
+        <TokenProvider>
+          <TokenData />
+        </TokenProvider>
       </div>
     </main>
+  );
+}
+
+function TokenData() {
+  const { loading, error, data } = useTokenContext();
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!data?.pools) return <div>No data found</div>;
+
+  return (
+    <div>
+      {data.pools.map((pool: any) => (
+        <div key={pool.id} className="mb-4">
+          <h3>Pool: {pool.id}</h3>
+          {pool.poolMembers.map((member: any) => (
+            <div key={member.id} className="ml-4">
+              <p>Member: {member.id}</p>
+              <p>Units: {member.units}</p>
+              <p>Connected: {member.isConnected ? 'Yes' : 'No'}</p>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -47,6 +59,7 @@ function Header() {
     <header className="flex flex-col items-center mb-20 md:mb-20">
       <Image
         src={thirdwebIcon}
+        priority
         alt=""
         className="size-[150px] md:size-[150px]"
         style={{
@@ -68,48 +81,5 @@ function Header() {
         file to get started.
       </p>
     </header>
-  );
-}
-
-function ThirdwebResources() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-3 justify-center">
-      <ArticleCard
-        title="thirdweb SDK Docs"
-        href="https://portal.thirdweb.com/typescript/v5"
-        description="thirdweb TypeScript SDK documentation"
-      />
-
-      <ArticleCard
-        title="Components and Hooks"
-        href="https://portal.thirdweb.com/typescript/v5/react"
-        description="Learn about the thirdweb React components and hooks in thirdweb SDK"
-      />
-
-      <ArticleCard
-        title="thirdweb Dashboard"
-        href="https://thirdweb.com/dashboard"
-        description="Deploy, configure, and manage your smart contracts from the dashboard."
-      />
-    </div>
-  );
-}
-
-function ArticleCard(props: {
-  title: string;
-  href: string;
-  description: string;
-}) {
-  return (
-    <a
-      href={props.href + "?utm_source=next-template"}
-      target="_blank"
-      className="flex flex-col border border-zinc-800 p-4 rounded-lg hover:bg-zinc-900 transition-colors hover:border-zinc-700"
-    >
-      <article>
-        <h2 className="text-lg font-semibold mb-2">{props.title}</h2>
-        <p className="text-sm text-zinc-400">{props.description}</p>
-      </article>
-    </a>
   );
 }
