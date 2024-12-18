@@ -1,0 +1,38 @@
+query MyQueryPoolMember($account: String!) {
+  poolMembers(where: { account_contains: $account }) {
+    id
+    units
+    isConnected
+    totalAmountClaimed
+    totalAmountReceivedUntilUpdatedAt
+    poolTotalAmountDistributedUntilUpdatedAt
+    updatedAtTimestamp
+    updatedAtBlockNumber
+    syncedPerUnitSettledValue
+    syncedPerUnitFlowRate
+    account {
+      id
+      outflows {
+        token {
+          name
+          symbol
+          decimals
+        }
+        deposit
+        currentFlowRate
+        createdAtTimestamp
+      }
+      poolMemberships {
+        totalAmountClaimed
+        pool {
+          token {
+            name
+            symbol
+            decimals
+          }
+          perUnitSettledValue
+        }
+      }
+    }
+  }
+}

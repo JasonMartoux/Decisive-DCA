@@ -4,6 +4,7 @@ import { ConnectButton } from "thirdweb/react";
 import thirdwebIcon from "@public/thirdweb.svg";
 import { client } from "./client";
 import { TokenProvider, useTokenContext } from "@/components/contexts/TokenContext";
+import { PositionProvider, usePosition } from "@/components/contexts/PositionContext";
 
 export default function Home() {
   return (
@@ -22,7 +23,9 @@ export default function Home() {
         </div>
 
         <TokenProvider>
-          <TokenData />
+          <PositionProvider>
+            <TokenData />
+          </PositionProvider>
         </TokenProvider>
       </div>
     </main>
@@ -30,15 +33,19 @@ export default function Home() {
 }
 
 function TokenData() {
-  const { loading, error, data } = useTokenContext();
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  if (!data?.pools) return <div>No data found</div>;
+    // Ensure tokenContext is not null before destructuring
+    const { inTokenAddress, underlyingTokenAddress, tokenBalance, tokenAllowance } = useTokenContext();
+    const { positionData, loading, error, refetchWithDelay } = usePosition();
+
+    console.log("positionData:", positionData);
+    console.log("loading:", loading);
+    console.log("error:", error);
+   //console.log("refetchWithDelay:", refetchWithDelay);
 
   return (
     <div>
-      {data.pools.map((pool: any) => (
+      {/* {data.pools.map((pool: any) => (
         <div key={pool.id} className="mb-4">
           <h3>Pool: {pool.id}</h3>
           {pool.poolMembers.map((member: any) => (
@@ -49,7 +56,7 @@ function TokenData() {
             </div>
           ))}
         </div>
-      ))}
+      ))} */}
     </div>
   );
 }
