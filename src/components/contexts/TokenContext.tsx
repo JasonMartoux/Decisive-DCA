@@ -1,17 +1,21 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { useReadContract } from "thirdweb/react";
 import { getContract, toTokens } from "thirdweb";
-import { chain } from '@/app/chain';
-import { client } from '@/app/client';
-import { getBalance, decimals as getDecimals, allowance as getAllowance} from 'thirdweb/extensions/erc20';
+import { chain } from "@/app/chain";
+import { client } from "@/app/client";
+import {
+  getBalance,
+  decimals as getDecimals,
+  allowance as getAllowance,
+} from "thirdweb/extensions/erc20";
 
 // Define the shape of the context value
 interface TokenContextType {
   validateTorexAndFetchTokenInfo: (
     torexAddr: string,
     address: string
-  ) => Promise<{ balance: string; allowance: string; }>;
+  ) => Promise<{ balance: string; allowance: string }>;
   inTokenAddress: string | null;
   underlyingTokenAddress: string | null;
   tokenBalance: string;
@@ -22,18 +26,18 @@ interface TokenContextType {
 const TokenContext = createContext<TokenContextType | null>(null);
 
 const erc20ABI = [
-  'function balanceOf(address account) external view returns (uint256)',
-  'function allowance(address owner, address spender) external view returns (uint256)',
-  'function approve(address spender, uint256 amount) external returns (bool)',
-  'function decimals() external view returns (uint8)',
+  "function balanceOf(address account) external view returns (uint256)",
+  "function allowance(address owner, address spender) external view returns (uint256)",
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function decimals() external view returns (uint8)",
 ];
 
 const torexABI = [
-  'function getPairedTokens() external view returns (address inToken, address outToken)',
+  "function getPairedTokens() external view returns (address inToken, address outToken)",
 ];
 
 const superTokenABI = [
-  'function getUnderlyingToken() external view returns (address)',
+  "function getUnderlyingToken() external view returns (address)",
 ];
 
 // Addresses
@@ -43,26 +47,35 @@ const TOREX_ADDRESS = "0xA8E5F011F72088E3113E2f4F8C3FB119Fc2E226C";
 export const TokenProvider = ({ children }: { children: React.ReactNode }) => {
   const account = useActiveAccount();
 
-  const [inTokenAddress, setInTokenAddress] = useState<string | null>("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
-  const [underlyingTokenAddress, setUnderlyingTokenAddress] = useState<string | null>(null);
+  const [inTokenAddress, setInTokenAddress] = useState<string | null>(
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+  );
+  const [underlyingTokenAddress, setUnderlyingTokenAddress] = useState<
+    string | null
+  >(null);
   const [isTorexValid, setIsTorexValid] = useState<boolean>(false);
-  const [tokenBalance, setTokenBalance] = useState<string>('');
-  const [tokenAllowance, setTokenAllowance] = useState<string>('');
+  const [tokenBalance, setTokenBalance] = useState<string>("");
+  const [tokenAllowance, setTokenAllowance] = useState<string>("");
 
   // Create contract instances at the component level
   const torexContract = getContract({
     client: client,
     address: TOREX_ADDRESS,
-    chain : chain,
+    chain: chain,
   });
 
   // Use hooks at the component level
-  const { data: pairedTokens, isLoading: isPairedTokensLoading, error : pairedTokensError } = useReadContract({
+  const {
+    data: pairedTokens,
+    isLoading: isPairedTokensLoading,
+    error: pairedTokensError,
+  } = useReadContract({
     contract: torexContract,
-    method: "function getPairedTokens() external view returns (address inToken, address outToken)",
+    method:
+      "function getPairedTokens() external view returns (address inToken, address outToken)",
     queryOptions: {
-      enabled: !!torexContract && !!account
-    }
+      enabled: !!torexContract && !!account,
+    },
   });
 
   // Create superToken contract instance
@@ -73,12 +86,16 @@ export const TokenProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   // Use hooks for superToken data
-  const { data: underlyingAddr, isLoading: isUnderlyingLoading, error: underlyingError } =  useReadContract({
+  const {
+    data: underlyingAddr,
+    isLoading: isUnderlyingLoading,
+    error: underlyingError,
+  } = useReadContract({
     contract: superTokenContract,
     method: "function getUnderlyingToken() external view returns (address)",
     queryOptions: {
-      enabled: !!superTokenContract && !!inTokenAddress
-    }
+      enabled: !!superTokenContract && !!inTokenAddress,
+    },
   });
 
   // Log contract creation
@@ -108,25 +125,40 @@ export const TokenProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [underlyingAddr, isUnderlyingLoading]);
 
-  const validateTorexAndFetchTokenInfo = async (torexAddr: string, address: string) => {
+  const validateTorexAndFetchTokenInfo = async (
+    torexAddr: string,
+    address: string
+  ) => {
     try {
-      console.log("underlyingAddr", underlyingAddr, "isTorexValid", isTorexValid);
+      console.log(
+        "underlyingAddr",
+        underlyingAddr,
+        "isTorexValid",
+        isTorexValid
+      );
       if (!underlyingAddr || underlyingAddr === "") {
-        return { balance: '', allowance: '' };
+        return { balance: "", allowance: "" };
       }
 
       // ERC20 token contract
       const erc20Contract = getContract({
         client: client,
         address: underlyingAddr,
-        chain: chain
+        chain: chain,
       });
       console.log("erc20Contract", erc20Contract);
 
       // Read ERC20 token data using Promise.all for parallel execution
-      const balance = await getBalance({ contract: erc20Contract, address: account.address });
+      const balance = await getBalance({
+        contract: erc20Contract,
+        address: account.address,
+      });
       const decimals = await getDecimals({ contract: erc20Contract });
-      const allowance = await getAllowance({ contract: erc20Contract, owner: account.address, spender: SB_MACRO_ADDRESS });
+      const allowance = await getAllowance({
+        contract: erc20Contract,
+        owner: account.address,
+        spender: SB_MACRO_ADDRESS,
+      });
 
       console.log("balance", balance);
       console.log("decimals", decimals);
@@ -142,13 +174,13 @@ export const TokenProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("formattedAllowance", formattedAllowance);
 
         return { balance: formattedBalance, allowance: formattedAllowance };
-     }
+      }
 
       throw new Error("Failed to fetch token information");
     } catch (error) {
       console.error("Error validating Torex address:", error);
       setIsTorexValid(false);
-      return { balance: '', allowance: '' };
+      return { balance: "", allowance: "" };
     }
   };
 
@@ -159,13 +191,15 @@ export const TokenProvider = ({ children }: { children: React.ReactNode }) => {
   }, [account, isTorexValid]);
 
   return (
-    <TokenContext.Provider value={{
-      validateTorexAndFetchTokenInfo,
-      inTokenAddress,
-      underlyingTokenAddress,
-      tokenBalance,
-      tokenAllowance
-    }}>
+    <TokenContext.Provider
+      value={{
+        validateTorexAndFetchTokenInfo,
+        inTokenAddress,
+        underlyingTokenAddress,
+        tokenBalance,
+        tokenAllowance,
+      }}
+    >
       {children}
     </TokenContext.Provider>
   );

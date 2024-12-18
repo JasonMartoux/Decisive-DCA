@@ -28,9 +28,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ThirdwebProvider>
-            <ApolloWrapper>
-                {children}
-            </ApolloWrapper>
+            <ApolloWrapper>{children}</ApolloWrapper>
           </ThirdwebProvider>
         </ThemeProvider>
       </body>
