@@ -1,264 +1,40 @@
 "use client";
+
 import Image from "next/image";
 import { ConnectButton } from "thirdweb/react";
 import thirdwebIcon from "@public/thirdweb.svg";
 import { client } from "./client";
-import {
-  TokenProvider,
-  useTokenContext,
-} from "@/components/contexts/TokenContext";
-import {
-  PositionProvider,
-  usePosition,
-} from "@/components/contexts/PositionContext";
-import { useCallback, useEffect, useState } from "react";
-import { toEther, toTokens, toUnits, toWei } from "thirdweb";
+//import StreamsDashboard from "@/components/StreamsDashboard";
+import { Navbar } from "@/components/Navbar";
+import { ApolloProvider } from "@apollo/client";
+import clientApollo from "@/lib/apollo_client";
+import PoolPositions from "@/components/PoolPositions";
+import { TorexPoolInfos } from "@/components/TorexPoolInfos";
 
 export default function Home() {
   return (
-    <main className="p-4 pb-10 min-h-[100vh] flex items-center justify-center container max-w-screen-lg mx-auto">
-      <div className="py-20">
-        <Header />
-
-        <div className="flex justify-center mb-20">
-          <ConnectButton
-            client={client}
-            appMetadata={{
-              name: "Example App",
-              url: "https://example.com",
-            }}
-          />
-        </div>
-
-        <TokenProvider>
-          <PositionProvider>
-            <TokenData />
-          </PositionProvider>
-        </TokenProvider>
-      </div>
-    </main>
-  );
-}
-
-function TokenData() {
-  const [currentStreamedAmounts, setCurrentStreamedAmounts] = useState<{
-    [key: string]: string;
-  }>({});
-
-  // Ensure tokenContext is not null before destructuring
-  const {
-    inTokenAddress,
-    underlyingTokenAddress,
-    tokenBalance,
-    tokenAllowance,
-  } = useTokenContext();
-  const { positionData, loading, error } = usePosition();
-
-  console.log("positionData:", positionData);
-  console.log("loading:", loading);
-  console.log("error:", error);
-
-  const calculateTotalStreamed = useCallback(
-    (flowRate: string, createdTimestamp: string) => {
-      const flowRatePerSecond = parseFloat(toUnits(flowRate, 18));
-      const startTime = parseInt(createdTimestamp);
-      const currentTime = Date.now() / 1000; // Use millisecond precision
-      const secondsElapsed = currentTime - startTime;
-      return (flowRatePerSecond * secondsElapsed).toString();
-    },
-    []
-  );
-
-  const calculateMonthlyFlowRate = (flowRate: string) => {
-    const flowRateBigInt = BigInt(flowRate);
-    const secondsInMonth = BigInt(30 * 24 * 60 * 60);
-    const monthlyFlowRateWei = flowRateBigInt * secondsInMonth;
-    return parseFloat(toTokens(monthlyFlowRateWei, 18));
-  };
-
-  // Modified useEffect for smooth animation
-  useEffect(() => {
-    if (!positionData?.pools || !loading) return;
-
-    // Cleanup function to store all animation frame IDs
-    const animations: { [key: string]: number } = {};
-
-    positionData.pools.forEach((pool) => {
-      console.log("pool", pool);
-      pool.poolMembers.forEach((member) => {
-        const latestOutflow = member.account.outflows
-          .filter((outflow) => outflow.currentFlowRate !== "1")
-          .sort(
-            (a, b) =>
-              parseInt(b.createdAtTimestamp) - parseInt(a.createdAtTimestamp)
-          )[0];
-
-        if (!latestOutflow || parseFloat(latestOutflow.currentFlowRate) <= 0)
-          return;
-
-        // Animation function
-        const animate = () => {
-          const streamedAmount = calculateTotalStreamed(
-            latestOutflow.currentFlowRate,
-            latestOutflow.createdAtTimestamp
-          );
-
-          setCurrentStreamedAmounts((prev) => ({
-            ...prev,
-            [pool.id]: streamedAmount,
-          }));
-
-          // Store animation frame ID for this pool
-          animations[pool.id] = requestAnimationFrame(animate);
-        };
-
-        // Start animation
-        animations[pool.id] = requestAnimationFrame(animate);
-      });
-    });
-
-    // Cleanup function
-    return () => {
-      Object.values(animations).forEach((frameId) => {
-        cancelAnimationFrame(frameId);
-      });
-    };
-  }, [positionData, loading, calculateTotalStreamed]);
-
-  return (
-    <div>
-      <div className="grid grid-cols-1 gap-8">
-        <div className="flex justify-between items-center mb-4"></div>
-        {loading && <p>Loading...</p>}
-        {error && <p>Error: {error.message}</p>}
-        {positionData && positionData.pools.length > 0 && (
-          <div className="grid grid-cols-1 gap-4">
-            {positionData.pools.map((pool, poolIndex) =>
-              pool.poolMembers.map((member, memberIndex) => {
-                const latestOutflow = member.account.outflows
-                  .filter((outflow) => outflow.currentFlowRate !== "1")
-                  .sort(
-                    (a, b) =>
-                      parseInt(b.createdAtTimestamp) -
-                      parseInt(a.createdAtTimestamp)
-                  )[0];
-
-                if (!latestOutflow) return null; // Skip if no active outflow
-
-                const monthlyFlowRate = calculateMonthlyFlowRate(
-                  latestOutflow.currentFlowRate
-                );
-                if (monthlyFlowRate <= 0) return null;
-
-                return (
-                  <div
-                    key={`${poolIndex}-${memberIndex}`}
-                    className="relative bg-gradient-to-br from-white to-[#f8f9fd] rounded-2xl p-6 shadow-lg border border-[#edf0f5]"
-                  >
-                    {/* Header with token pair */}
-                    <div className="absolute -top-4 left-6 bg-[#2a85f0] text-white px-4 py-2 rounded-full shadow-md">
-                      <div className="flex items-center gap-2">
-                        {/*<div className="flex items-center relative">
-                                <img src={usdc.src} alt="USDC" className="w-[20px] h-[20px]" />
-                                <img src={eth.src} alt="ETH" className="w-[20px] h-[24px] ml-[-8px]" />
-                              </div>*/}
-                        <span className="font-medium">USDC → ETH</span>
-                      </div>
-                    </div>
-
-                    {/* Main content grid */}
-                    <div className="mt-6 grid grid-cols-2 gap-6">
-                      {/* Left column - Flow details */}
-                      <div className="space-y-4">
-                        <div className="bg-[#f3f5fa] rounded-xl p-4">
-                          <p className="text-[#666] text-sm">Monthly Flow</p>
-                          <p className="text-[#222] text-xl font-bold mt-1">
-                            {parseFloat(monthlyFlowRate).toFixed(2)} USDC
-                          </p>
-                        </div>
-                        <div className="bg-[#f3f5fa] rounded-xl p-4">
-                          <p className="text-[#666] text-sm">Total Streamed</p>
-                          <p className="text-[#222] text-xl font-bold mt-1">
-                            {currentStreamedAmounts[pool.id]
-                              ? parseFloat(
-                                  currentStreamedAmounts[pool.id]
-                                ).toFixed(10)
-                              : "0.0000"}{" "}
-                            USDC
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right column - Received and rewards */}
-                      <div className="space-y-4">
-                        <div className="bg-[#f3f5fa] rounded-xl p-4">
-                          <p className="text-[#666] text-sm">Total Received</p>
-                          <p className="text-[#222] text-xl font-bold mt-1">
-                            {parseFloat(
-                              toEther(
-                                BigInt(member.account.poolMemberships[0].pool
-                                  .perUnitSettledValue)
-                              )
-                            ).toFixed(6)}{" "}
-                            ETH
-                          </p>
-                        </div>
-                        <div className="bg-[#f3f5fa] rounded-xl p-4">
-                          <p className="text-[#666] text-sm">Accrued Rewards</p>
-                          <p className="text-[#222] text-xl font-bold mt-1 flex items-center gap-2">
-                            <span>4.1049 FLOW</span>
-                            <span className="text-xs text-[#2a85f0] bg-[#2a85f0]/10 px-2 py-1 rounded-full">
-                              +4.1049 today
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            {(!positionData ||
-              positionData.pools.length === 0 ||
-              positionData.pools.every(
-                (pool) => pool.poolMembers.length === 0
-              )) && <p className="text-white">No active positions</p>}
+    <>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-grow container mx-auto mb-3 p-4">
+          <Navbar />
+          <div className="text-center mx-auto mb-10">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Automate Your DCA Strategy
+            </h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Set up automated token swaps with real-time streaming. Dollar-cost
+              averaging made simple and efficient for better long-term results, thx to superboring and superfluid!
+            </p>
           </div>
-        )}
+
+          <TorexPoolInfos />
+          {/* <ApolloProvider client={clientApollo}>
+            <PoolPositions />
+          </ApolloProvider> */}
+
+          {/* <StreamsDashboard /> */}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
-
-  function Header() {
-    return (
-      <header className="flex flex-col items-center mb-20 md:mb-20">
-        <Image
-          src={thirdwebIcon}
-          priority
-          alt=""
-          className="size-[150px] md:size-[150px]"
-          style={{
-            filter: "drop-shadow(0px 0px 24px #a726a9a8)",
-          }}
-        />
-
-        <h1 className="text-2xl md:text-6xl font-semibold md:font-bold tracking-tighter mb-6 text-zinc-100">
-          thirdweb SDK
-          <span className="text-zinc-300 inline-block mx-1"> + </span>
-          <span className="inline-block -skew-x-6 text-blue-500">
-            {" "}
-            Next.js{" "}
-          </span>
-        </h1>
-
-        <p className="text-zinc-300 text-base">
-          Read the{" "}
-          <code className="bg-zinc-800 text-zinc-300 px-2 rounded py-1 text-sm mx-1">
-            README.md
-          </code>{" "}
-          file to get started.
-        </p>
-      </header>
-    );
-  }

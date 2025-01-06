@@ -3,8 +3,6 @@ import { Metadata } from "next";
 import { ThirdwebProvider } from "thirdweb/react";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import "./globals.css";
-import { ApolloWrapper } from "@/components/providers/ApolloWrapper";
-
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -23,13 +21,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="white"
           enableSystem
           disableTransitionOnChange
         >
-          <ThirdwebProvider>
-            <ApolloWrapper>{children}</ApolloWrapper>
-          </ThirdwebProvider>
+          <ThirdwebProvider>{children}</ThirdwebProvider>
         </ThemeProvider>
       </body>
     </html>

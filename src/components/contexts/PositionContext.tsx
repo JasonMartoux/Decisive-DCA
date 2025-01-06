@@ -10,18 +10,12 @@ import { useActiveAccount } from "thirdweb/react";
 
 // Define the shape of a stream
 interface PoolMember {
-  id: string;
-  units: string;
-  isConnected: boolean;
-  totalAmountClaimed: string;
-  totalAmountReceivedUntilUpdatedAt: string;
-  poolTotalAmountDistributedUntilUpdatedAt: string;
-  updatedAtTimestamp: string;
-  updatedAtBlockNumber: string;
-  syncedPerUnitSettledValue: string;
-  syncedPerUnitFlowRate: string;
+  token: {
+    name: string;
+    symbol: string;
+    decimals: string;
+  };
   account: {
-    id: string;
     outflows: {
       deposit: string;
       currentFlowRate: string;
@@ -60,35 +54,40 @@ const PositionContext = createContext<PositionContextValue | undefined>(
 // Define the GraphQL query
 const POOLS_QUERY = gql`
   query getFlowEvents($poolAdmin: String!, $account: String!) {
-    pools(where: { admin_contains: $poolAdmin }) {
-      id
-      poolMembers(where: { account_contains: $account }) {
-        id
-        units
-        isConnected
-        totalAmountClaimed
-        totalAmountReceivedUntilUpdatedAt
-        poolTotalAmountDistributedUntilUpdatedAt
-        updatedAtTimestamp
-        updatedAtBlockNumber
-        syncedPerUnitSettledValue
-        syncedPerUnitFlowRate
+    query getFlowEvents($poolAdmin: String!, $account: String!) {
+    pools(where: {admin_contains: $poolAdmin}) {
+      token {
+        name
+        symbol
+        decimals
+      }
+      poolMembers(where: {account_contains: $account}) {
+      totalAmountReceivedUntilUpdatedAt
+      syncedPerUnitFlowRate
+      syncedPerUnitSettledValue
         account {
-          id
           outflows {
-            deposit
             currentFlowRate
             createdAtTimestamp
           }
           poolMemberships {
             totalAmountClaimed
+            units
             pool {
+              totalAmountDistributedUntilUpdatedAt
               perUnitSettledValue
+              totalAmountDistributedUntilUpdatedAt
+                  token {
+                    name
+                    symbol
+                    decimals
+                  }
             }
           }
         }
       }
     }
+  }
   }
 `;
 

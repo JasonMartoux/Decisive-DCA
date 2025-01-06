@@ -25,21 +25,6 @@ interface TokenContextType {
 // Create the context with a default value of null
 const TokenContext = createContext<TokenContextType | null>(null);
 
-const erc20ABI = [
-  "function balanceOf(address account) external view returns (uint256)",
-  "function allowance(address owner, address spender) external view returns (uint256)",
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function decimals() external view returns (uint8)",
-];
-
-const torexABI = [
-  "function getPairedTokens() external view returns (address inToken, address outToken)",
-];
-
-const superTokenABI = [
-  "function getUnderlyingToken() external view returns (address)",
-];
-
 // Addresses
 const SB_MACRO_ADDRESS = "0x383329703f346d72F4b86111a502daaa8f2c69C7";
 const TOREX_ADDRESS = "0xA8E5F011F72088E3113E2f4F8C3FB119Fc2E226C";
